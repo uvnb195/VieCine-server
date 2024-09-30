@@ -1,10 +1,13 @@
 const express = require('express');
+const middleware = require('./middleware/index');
+
 const app = express();
 
 const port = 3000;
 
 //middleware
 app.use(express.json());
+app.use(middleware.decodeToken)
 
 
 //app routes

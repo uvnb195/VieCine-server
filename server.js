@@ -1,57 +1,63 @@
+require('dotenv').config()
+
 const express = require('express');
+const cors = require('cors');
 require('dotenv').config()
 const middleware = require('./middleware/index');
 const tmdb = require('./src/tmdb-api');
+const timeout = require('connect-timeout')
+const mongoose = require('mongoose');
+
 
 const app = express();
+app.use(timeout('3s'))
 
-const port = 3000;
+
+
+const clientOptions = {
+    serverApi:
+    {
+        version: '1', strict: true,
+        deprecationErrors: true,
+        useUnifiedTopology: true,
+    }
+};
+mongoose.connect(process.env.MONGO_DB_URI, clientOptions)
+const db = mongoose.connection
+db.on('error', console.error.bind(console, 'connection error:'))
+db.once('open', () => {
+    console.log("Connect to db successfully")
+})
+
+const port = 3000
+const host = '0.0.0.0'
+const publicRouter = require('./routes/publicApi')
+const privateRouter = require('./routes/privateApi')
+const adminRouter = require('./routes/admin')
 
 //middleware
 app.use(express.json());
+app.use(express.urlencoded({
+    extended: true
+}))
+app.use(cors());
 app.use(middleware.decodeToken)
 
-
-//public routes
 app.get('/', (req, res) => {
+    console.log(req.validation.uid, req.validation.role)
     res.send('Hello World!');
 })
 
-app.get('/trending', (req, res) => {
-    tmdb.getTrendingMovies().then((result) => {
-        res.send(result)
-    })
-})
-
-app.get('/upcoming', (req, res) => {
-    tmdb.getUpcomingMovies().then((result) => {
-        res.send(result)
-    })
-})
-
-app.get('/showing', (req, res) => {
-    tmdb.getShowingMovies().then((result) => {
-        console.log(result)
-        res.send(result)
-    })
-})
-
-app.get('/movie/:id', (req, res) => {
-    tmdb.getMovieDetail(req.params.id).then((result) => {
-        res.send(result)
-    })
-})
-
-app.get('/movie/:id/credits', (req, res) => {
-    console.log(req.path)
-    tmdb.getMoVieCredit(req.params.id).then((result) => {
-        res.send(result)
-    })
-})
+//public routes
+app.use('/api', publicRouter)
 
 // secure routes
+app.use('/user', privateRouter)
+
+//admin routes
+app.use('/admin', adminRouter)
 
 //start the server
-app.listen(port, () => {
-    console.log('Server is running on port: localhost:3000');
+app.listen(port, host, () => {
+    console.log('Server is running on port 3000');
 });

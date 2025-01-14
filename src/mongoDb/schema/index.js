@@ -15,8 +15,43 @@ const theatreSchema = new mongoose.Schema({
         lat: { type: Number, required: true },
         lng: { type: Number, required: true },
     },
+    // status: {
+    //     type: String,
+    //     enum: ['available', 'suspend', 'removed'],
+    //     default: 'available'
+    // }
+})
+
+const roomSchema = new mongoose.Schema({
+    roomName: { type: String, required: true },
+    roomType: {
+        type: String,
+        enum: ['2D', '3D', 'IMAX'],
+        required: true
+    },
+    theatreId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Theatre',
+        required: true
+    },
     totalSeats: { type: Number, required: true },
     map2d: { type: String, required: true },
+    prices: {
+        type: [{
+            seatType: {
+                type: String,
+                enum: ['STANDARD', 'VIP', 'SWEET-BOX'],
+                required: true
+            },
+            price: { type: Number, required: true }
+        }],
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['AVAILABLE', 'SUSPEND', 'REMOVED'],
+        default: 'AVAILABLE'
+    }
 })
 
 const serviceSchema = new mongoose.Schema({
@@ -31,7 +66,7 @@ const movieSchema = new mongoose.Schema({
     movieId: { type: Number, required: true },
     movieName: { type: String, required: true },
     movieImageUri: { type: String, required: true },
-    createAt: { type: Date, default: Date.now },
+    startTime: { type: Date, default: Date.now },
     endAt: { type: Date, required: true },
 })
 
@@ -96,6 +131,7 @@ const ticketSchema = new mongoose.Schema({
 
 
 const Theatre = mongoose.model('Theatre', theatreSchema)
+const Room = mongoose.model('Room', roomSchema)
 const Service = mongoose.model('Service', serviceSchema)
 const Movie = mongoose.model('Movie', movieSchema)
 const MovieSchedule = mongoose.model('Movie_Schedule', movieScheduleSchema)
@@ -103,6 +139,7 @@ const Ticket = mongoose.model('Ticket', ticketSchema)
 
 module.exports = {
     Theatre,
+    Room,
     Service,
     Movie,
     MovieSchedule,

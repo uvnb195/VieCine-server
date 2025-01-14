@@ -1,5 +1,6 @@
 const {
     Theatre,
+    Room,
     Service,
     Movie,
     MovieSchedule,
@@ -35,6 +36,28 @@ class DbRepository {
             const newTheatre = new Theatre(theatre)
             const result = await newTheatre.save()
             return result._id.toString()
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+
+    // room
+    async getRooms(theatreId) {
+        try {
+            const rooms = await Room.find({ theatreId: theatreId })
+            return rooms
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+
+    async addRoom(room) {
+        try {
+            const newRoom = new Room(room)
+            const result = await newRoom.save()
+            return result
         } catch (error) {
             console.log(error)
             return error

@@ -28,9 +28,7 @@ router.post('/theatre', upload.none(), async (req, res) => {
         const dbRep = new DatabaseRepository(mongoose.connection)
         const decodedData = {
             name: req.body.name,
-            location: JSON.parse(req.body.location),
-            totalSeats: req.body.totalSeats,
-            map2d: req.body.map2d
+            location: JSON.parse(req.body.location)
         }
         const result = await dbRep.addTheatre(decodedData)
         res.status(201).send(result)
@@ -38,6 +36,30 @@ router.post('/theatre', upload.none(), async (req, res) => {
         console.log(err)
         res.status(500).send({ message: 'Internal server error' })
     }
+})
+
+//room
+router.get('/room/:theatreId', async (req, res) => {
+    const dbRep = new DatabaseRepository(mongoose.connection)
+    const { theatreId } = req.params
+    const result = await dbRep.getRooms(theatreId)
+    res.send(result)
+})
+
+router.post('/room/:theatreId', upload.none(), async (req, res) => {
+    const dbRep = new DatabaseRepository(mongoose.connection)
+    const { theatreId } = req.params
+    const decodedData = {
+        roomName: req.body.roomName,
+        roomType: req.body.roomType,
+        theatreId: theatreId,
+        totalSeats: req.body.totalSeats,
+        map2d: req.body.map2d,
+        prices: JSON.parse(req.body.prices)
+    }
+    console.log('room:::::', decodedData)
+    const result = await dbRep.addRoom(decodedData)
+    res.status(201).send(result)
 })
 
 
@@ -84,7 +106,7 @@ router.post('/movie', upload.none(), async (req, res) => {
             movieId: req.body.movieId,
             movieName: req.body.movieName,
             movieImageUri: req.body.movieImageUri,
-            createAt: req.body.createAt,
+            startTime: req.body.startTime,
             endAt: req.body.endAt,
         }
         const result = await dbRep.addMovie(decodedData)

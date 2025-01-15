@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+const STATUS_ENUM = ['AVAILABLE', 'SUSPEND', 'REMOVED']
+const ROOM_TYPE_ENUM = ['2D', '3D', 'IMAX']
+const SEAT_TYPE_ENUM = ['STANDARD', 'VIP', 'SWEET-BOX']
+
 const theatreSchema = new mongoose.Schema({
     name: { type: String, required: true },
     location: {
@@ -26,7 +30,7 @@ const roomSchema = new mongoose.Schema({
     roomName: { type: String, required: true },
     roomType: {
         type: String,
-        enum: ['2D', '3D', 'IMAX'],
+        enum: ROOM_TYPE_ENUM,
         required: true
     },
     theatreId: {
@@ -40,7 +44,7 @@ const roomSchema = new mongoose.Schema({
         type: [{
             seatType: {
                 type: String,
-                enum: ['STANDARD', 'VIP', 'SWEET-BOX'],
+                enum: SEAT_TYPE_ENUM,
                 required: true
             },
             price: { type: Number, required: true }
@@ -49,8 +53,8 @@ const roomSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['AVAILABLE', 'SUSPEND', 'REMOVED'],
-        default: 'AVAILABLE'
+        enum: STATUS_ENUM,
+        default: STATUS_ENUM[0]
     }
 })
 
@@ -68,9 +72,39 @@ const movieSchema = new mongoose.Schema({
     movieImageUri: { type: String, required: true },
     startTime: { type: Date, default: Date.now },
     endAt: { type: Date, required: true },
+    status: {
+        type: String,
+        enum: STATUS_ENUM,
+        default: STATUS_ENUM[0]
+    }
 })
 
-
+const scheduleSchema = new mongoose.Schema({
+    theatreId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Theatre',
+        required: true
+    },
+    roomId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Room',
+        required: true
+    },
+    movieId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Movie',
+        required: true
+    },
+    timeStart: {
+        type: Date,
+        required: true
+    },
+    status: {
+        type: String,
+        enum: STATUS_ENUM,
+        default: STATUS_ENUM[0]
+    }
+})
 
 const movieScheduleSchema = new mongoose.Schema({
     theatreId: {
@@ -134,6 +168,7 @@ const Theatre = mongoose.model('Theatre', theatreSchema)
 const Room = mongoose.model('Room', roomSchema)
 const Service = mongoose.model('Service', serviceSchema)
 const Movie = mongoose.model('Movie', movieSchema)
+const Schedule = mongoose.model('Schedule', scheduleSchema)
 const MovieSchedule = mongoose.model('Movie_Schedule', movieScheduleSchema)
 const Ticket = mongoose.model('Ticket', ticketSchema)
 
@@ -142,6 +177,7 @@ module.exports = {
     Room,
     Service,
     Movie,
+    Schedule,
     MovieSchedule,
     Ticket
 }

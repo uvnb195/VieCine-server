@@ -50,11 +50,16 @@ class TheMovieDb {
         return url
     }
     async getMovieTrailer(id) {
-        const url = `${this.url}/movie/${id}/videos`
-        const response = await fetch(url, this.options).then(res => res.json())
-        const data = response.results.filter(video => video.site === 'YouTube')[0]
-        if (!data) return ''
-        return `https://www.youtube.com/embed/${data.key}`
+        try {
+            const url = `${this.url}/movie/${id}/videos`
+            const response = await fetch(url, this.options).then(res => res.json())
+            const data = response.results.filter(video => video.site === 'YouTube')[0] || null
+            if (!data) return ''
+            return `https://www.youtube.com/embed/${data.key}`
+        } catch (err) {
+            return null
+
+        }
     }
 
     //movie detail
@@ -75,11 +80,7 @@ class TheMovieDb {
             return certificate.map(item => item.certification)[0]
 
         } catch (error) {
-            //if region not found => return US as default
-            const response = await fetch(url, this.options).then(res => res.json()).then(data => data.results)
-            const certificationDefault = response.find(item => item.iso_3166_1 === 'US')
-            const defaultCertificate = certificationDefault.release_dates.filter(item => item.certification !== '').map(item => item.certification)
-            return defaultCertificate[0]
+            return null
         }
     }
 
@@ -94,8 +95,6 @@ class TheMovieDb {
         //get certification
         const certification = await this.getMovieCertification(id, region)
 
-        console.log(response)
-
         const movieData = {
             ...response,
             backdrop_path: `${this.imageUrl(500)}/${response.backdrop_path}`,
@@ -106,15 +105,19 @@ class TheMovieDb {
         return movieData
     }
     async getMovieCast(id) {
-        const url = `${this.url}/movie/${id}/credits`
-        const response = await fetch(url, this.options).then(res => res.json())
-        const data = {
-            results: response.cast.map(item => ({
-                ...item,
-                profile_path: `${this.imageUrl(342)}/${item.profile_path}`
-            }))
+        try {
+            const url = `${this.url}/movie/${id}/credits`
+            const response = await fetch(url, this.options).then(res => res.json())
+            const data = {
+                results: response.cast.map(item => ({
+                    ...item,
+                    profile_path: `${this.imageUrl(342)}/${item.profile_path}`
+                }))
+            }
+            return data
+        } catch (error) {
+            return null
         }
-        return data
     }
 
     // person detail

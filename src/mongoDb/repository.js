@@ -1,10 +1,12 @@
+const tmdbApi = require('../tmdb-api')
 const {
     Theatre,
     Room,
     Service,
     Movie,
     MovieSchedule,
-    Ticket
+    Ticket,
+    Schedule
 } = require('./schema/index')
 
 
@@ -63,6 +65,25 @@ class DbRepository {
             return error
         }
     }
+    async updateRoom(room) {
+        try {
+            await Room.findByIdAndUpdate(room._id, room)
+            return room
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+    async getRoomDetail(theatreId, id) {
+        try {
+            const rooms = await this.getRooms(theatreId)
+            const room = rooms.filter(room => room._id == id)[0]
+            return room ? room : null
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
 
     //service
     async getServices() {
@@ -109,11 +130,58 @@ class DbRepository {
         }
     }
 
+    // schedule
+    async getRoomSchedule(roomId) {
+        try {
+            const schedules = await Schedule.find({ roomId: roomId })
+            return schedules
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+
+    async checkExistSchedule(roomId, movieId, timeStart, duration, date) {
+        const isOverlapping = (a, b, c, d) => {
+            return a < d && b > c;
+        }
+
+        try {
+            endTime = new Date(timeStart.getTime() + duration * 1000)
+            const schedules = await Schedule.find({ roomId: roomId }).then(async (data) => {
+                const duration = await tmdbApi.getMovieDetail(movieId, 'VN').then(data => data.runtime)
+                data.map(item => ({
+                    ...item,
+                    timeEnd: new Date(item.timeStart.getTime() + duration * 1000)
+                }))
+            })
+
+            const check = schedules.some(item => isOverlapping(item.timeStart, item.timeEnd, timeStart, endTime) && item.date === date)
+
+            console.log('check overlap', check)
+
+            return false
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+
     //movie schedule
     async getMovieSchedules() {
         try {
             const movieSchedules = await MovieSchedule.find()
             return movieSchedules
+        } catch (error) {
+            console.log(error)
+            return error
+        }
+    }
+    async upsertSchedule(schedules) {
+        try {
+            const newSchedules = schedules.map(schedule => new Schedule(schedule))
+            const result = await Schedule.insertMany(newSchedules)
+            return result
         } catch (error) {
             console.log(error)
             return error

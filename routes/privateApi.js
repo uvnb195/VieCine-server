@@ -4,7 +4,7 @@ const multer = require('multer');
 const mongoose = require('mongoose');
 
 const userRepository = require('../middleware/firebase/repositories/firebaseAuth')
-const DatabaseRepository = require('../src/mongoDb/mongoDb')
+const DatabaseRepository = require('../src/mongoDb/repository')
 const upload = multer()
 
 router.get('/', (req, res) => {

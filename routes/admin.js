@@ -5,8 +5,9 @@ const router = express.Router();
 const multer = require('multer');
 
 const adminRepository = require('../middleware/firebase/repositories/firebaseAdmin');
-const DatabaseRepository = require('../src/mongoDb/mongoDb')
+const DatabaseRepository = require('../src/mongoDb/repository')
 const upload = multer()
+const tmdb = require('../src/tmdb-api');
 
 
 // theatre
@@ -39,10 +40,22 @@ router.post('/theatre', upload.none(), async (req, res) => {
 })
 
 //room
+/**
+ * GET ROOM LIST
+ */
 router.get('/room/:theatreId', async (req, res) => {
     const dbRep = new DatabaseRepository(mongoose.connection)
     const { theatreId } = req.params
     const result = await dbRep.getRooms(theatreId)
+    res.send(result)
+})
+/**
+ * GET ROOM DETAIL
+ */
+router.get('/room/:theatreId/:roomId', async (req, res) => {
+    const dbRep = new DatabaseRepository(mongoose.connection)
+    const { theatreId, roomId } = req.params
+    const result = await dbRep.getRoomDetail(theatreId, roomId)
     res.send(result)
 })
 
@@ -50,16 +63,22 @@ router.post('/room/:theatreId', upload.none(), async (req, res) => {
     const dbRep = new DatabaseRepository(mongoose.connection)
     const { theatreId } = req.params
     const decodedData = {
+        _id: req.body._id ? req.body._id : undefined,
         roomName: req.body.roomName,
         roomType: req.body.roomType,
         theatreId: theatreId,
         totalSeats: req.body.totalSeats,
         map2d: req.body.map2d,
-        prices: JSON.parse(req.body.prices)
+        prices: JSON.parse(req.body.prices),
+        status: req.body.status ? req.body.status : undefined
     }
-    console.log('room:::::', decodedData)
-    const result = await dbRep.addRoom(decodedData)
-    res.status(201).send(result)
+    if (decodedData._id) {
+        const result = await dbRep.updateRoom(decodedData)
+        res.status(201).send(result)
+    } else {
+        const result = await dbRep.addRoom(decodedData)
+        res.status(201).send(result)
+    }
 })
 
 
@@ -92,6 +111,8 @@ router.post('/service', upload.none(), async (req, res) => {
 
 //movie
 router.get('/movie', async (req, res) => {
+    const { role } = req.validation
+    const { uid } = req.params
     const dbRep = new DatabaseRepository(mongoose.connection)
     const result = await dbRep.getMovies()
     res.send(result)
@@ -117,6 +138,20 @@ router.post('/movie', upload.none(), async (req, res) => {
     }
 })
 
+// schedule
+router.get('/room-schedule/:roomId/', async (req, res) => {
+    const dbRep = new DatabaseRepository(mongoose.connection)
+    const { roomId } = req.params
+    const result = await dbRep.getRoomSchedule(roomId)
+    res.send(result)
+})
+router.get('/room/:roomId/schedule-check', async (req, res) => {
+    const dbRep = new DatabaseRepository(mongoose.connection)
+    const { roomId, movieId, timeStart, duration, date } = req.query
+    const result = await dbRep.checkExistSchedule(roomId, movieId, new Date(timeStart), duration, new Date(date))
+    console.log('is overlapping::::', result)
+    res.send(result)
+})
 //movie schedule
 router.get('/schedule/:theatreId', async (req, res) => {
     const dbRep = new DatabaseRepository(mongoose.connection)
@@ -138,6 +173,20 @@ router.post('/schedule/', upload.none(), async (req, res) => {
             serviceIds: req.body.serviceIds || null
         }
         const result = await dbRep.addMovieSchedule(decodedData)
+        res.status(201).send(result)
+    } catch (err) {
+        console.log(err)
+        res.status(500).send({ message: 'Internal server error' })
+    }
+})
+router.post('/room/:roomId/add-schedules', upload.none(), async (req, res) => {
+    const { role } = req.validation
+    const { uid } = req.params
+    try {
+        const dbRep = new DatabaseRepository(mongoose.connection)
+        const schedules = JSON.parse(req.body.schedules)
+        const result = await dbRep.upsertSchedule(schedules)
+        console.log('add schedules', result)
         res.status(201).send(result)
     } catch (err) {
         console.log(err)
